@@ -1,0 +1,50 @@
+############################
+# Node.js / Express backend #
+############################
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Process / pids
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Testing / Coverage
+coverage/
+.nyc_output/
+
+# Build outputs / caches
+dist/
+build/
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Environment files (keep examples)
+.env
+.env.*
+!.env.example
+
+# Upload/temp directories (adjust if you store uploads elsewhere)
+uploads/
+tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.idea/
+.vscode/
