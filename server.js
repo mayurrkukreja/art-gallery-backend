@@ -10,6 +10,14 @@ require('dotenv').config();
 const app = express();
 
 // ✅ Middleware
+app.use(cors({
+  origin: [
+    'http://localhost:3000',                           // Local dev
+    'https://art-gallery-frontend-a3rc.vercel.app/',    // ✅ YOUR Vercel URL
+    'https://art-gallery-frontend-*.vercel.app'        // Vercel previews
+  ],
+  credentials: true
+}));
 app.use(cors({ origin: process.env.STATIC_FRONTEND_URL || 'https://art-gallery-backend-fabx.onrender.com', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
