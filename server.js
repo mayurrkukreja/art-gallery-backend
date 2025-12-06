@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { Readable } = require('stream');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -44,7 +46,7 @@ app.use(cors({
 // Preflight will be handled by the cors middleware above
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use('/images', express.static('uploads'));  // ✅ Serve uploaded images
+app.use('/images', express.static('uploads'));  // Local dev static images (Cloudinary serves via URLs)
 
 
 
@@ -53,26 +55,36 @@ if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
 
-// ✅ SIMPLE Multer (Disk storage - NO GridFS crash)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-const upload = multer({ storage });
+// ✅ Multer memory storage for Cloudinary
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ✅ Cloudinary config (CLOUDINARY_URL or individual vars)
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config({ secure: true });
+} else if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
+
+const bufferToStream = (buffer) => {
+  const readable = new Readable();
+  readable.push(buffer);
+  readable.push(null);
+  return readable;
+};
 
 // ✅ Artwork Model
 const ArtworkSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
-  filename: { type: String, required: true },
-  mimetype: { type: String, required: true },
+  imageUrl: { type: String, required: true }, // ✅ Cloudinary URL stored
+  cloudinaryPublicId: { type: String },
   isPublic: { type: Boolean, default: true },
-  views: { type: Number, default: 0 }
+  views: { type: Number, default: 0 },
 }, { timestamps: true });
 
 const Artwork = mongoose.models.Artwork || mongoose.model('Artwork', ArtworkSchema);
@@ -92,8 +104,7 @@ const adminAuth = (req, res, next) => {
 // ✅ DB Connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    // || 'mongodb://localhost:27017/artgallery'
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/artgallery');
     console.log('✅ MongoDB Connected!');
   } catch (error) {
     console.error('❌ MongoDB Error:', error.message);
@@ -147,22 +158,32 @@ app.get('/api/admin/artworks', adminAuth, async (req, res) => {
 app.post('/api/admin/artworks', adminAuth, upload.single('image'), async (req, res) => {
   console.log('📤 Upload received:');
   console.log('- Title:', req.body.title);
-  console.log('- File:', req.file?.filename);
+  console.log('- File received:', Boolean(req.file));
   
   try {
     if (!req.body.title) return res.status(400).json({ error: 'Title required' });
     if (!req.file) return res.status(400).json({ error: 'Image required' });
 
+    // Upload to Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+      const folder = process.env.CLOUDINARY_FOLDER || 'artworks';
+      const stream = cloudinary.uploader.upload_stream(
+        { folder, resource_type: 'image' },
+        (error, result) => (error ? reject(error) : resolve(result))
+      );
+      bufferToStream(req.file.buffer).pipe(stream);
+    });
+
     const artwork = new Artwork({
       title: req.body.title,
       description: req.body.description || '',
-      filename: req.file.filename,
-      mimetype: req.file.mimetype
+      imageUrl: uploadResult.secure_url,
+      cloudinaryPublicId: uploadResult.public_id,
     });
-    
+
     await artwork.save();
-    console.log('✅ SAVED:', artwork._id);
-    res.status(201).json(artwork);
+    console.log('✅ SAVED:', artwork._id, '->', uploadResult.secure_url);
+    res.status(201).json({ ...artwork.toObject(), imageUrl: uploadResult.secure_url });
   } catch (error) {
     console.error('❌ ERROR:', error);
     res.status(500).json({ error: error.message });
