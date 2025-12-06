@@ -92,7 +92,8 @@ const adminAuth = (req, res, next) => {
 // ✅ DB Connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/artgallery');
+    await mongoose.connect(process.env.MONGODB_URI);
+    // || 'mongodb://localhost:27017/artgallery'
     console.log('✅ MongoDB Connected!');
   } catch (error) {
     console.error('❌ MongoDB Error:', error.message);
