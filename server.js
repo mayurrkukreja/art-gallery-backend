@@ -14,7 +14,12 @@ app.use(cors({ origin: process.env.STATIC_FRONTEND_URL || 'https://art-gallery-b
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/images', express.static('uploads'));  // ✅ Serve uploaded images
-
+app.use(cors({
+  origin: true,  // ✅ Allows ALL origins (including Vercel)
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 // ✅ Create uploads folder
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
