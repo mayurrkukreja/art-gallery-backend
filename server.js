@@ -41,7 +41,7 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.options("*", cors()); // allow preflight for all routes
+// Preflight will be handled by the cors middleware above
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/images', express.static('uploads'));  // ✅ Serve uploaded images
@@ -101,6 +101,7 @@ const connectDB = async () => {
 };
 
 // ===== ROUTES =====
+app.get('/', (req, res) => res.send('Art Gallery API running'));
 app.get('/api/health', (req, res) => res.json({ status: 'OK' }));
 
 app.post('/api/admin/login', (req, res) => {
