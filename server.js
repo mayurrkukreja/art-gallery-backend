@@ -11,32 +11,6 @@ require('dotenv').config();
 
 const app = express();
 
-// ✅ Middleware
-// app.use(cors({
-//   origin: [
-//     'http://localhost:3000',                           // Local dev
-//     'https://art-gallery-frontend-a3rc.vercel.app/',    // ✅ YOUR Vercel URL
-//     'https://art-gallery-frontend-*.vercel.app'        // Vercel previews
-//   ],
-//   credentials: true
-// }));
-// app.use(cors({ origin: process.env.STATIC_FRONTEND_URL || 'https://art-gallery-backend-fabx.onrender.com', credentials: true }));
-
-// app.use((req, res, next) => {
-//   // Set CORS headers for ALL requests
-//   res.setHeader('Access-Control-Allow-Origin', 'https://art-gallery-frontend-a3rc.vercel.app');
-//   res.setHeader('Access-Control-Allow-Credentials', 'true');
-//   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-//   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-//   // Handle preflight OPTIONS
-//   if (req.method === 'OPTIONS') {
-//     res.status(200).end();
-//     return;
-//   }
-//   next();
-// });
-
 app.use(cors({
   origin: "https://art-gallery-frontend-a3rc.vercel.app",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
